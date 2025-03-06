@@ -1,7 +1,6 @@
 package org.example.ScreenCapture;
 
 import net.sourceforge.tess4j.Tesseract;
-import org.example.Main;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -10,12 +9,19 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class ScreenCaptureOCR {
-	// 캡쳐할 화면 상 하단 저장
+	// 캡쳐할 화면 상 하단 캡처 위치 정보 스케쥴러, 데이터 저장
 	private static Point leftTop;
 	private static Point rightBottom;
+	private static Rectangle captureRect;
+	private static ScheduledExecutorService executor;
+	private static String[] price;
+	private static saver saverr = new saver();
 	
 	public static void main (String[] args) {
 		SwingUtilities.invokeLater(ScreenCaptureOCR::createGUI);
@@ -47,49 +53,93 @@ public class ScreenCaptureOCR {
 				} else {
 					rightBottom = e.getPoint();
 					frame.dispose();
-					screenCapture();
+					startPeriodicCapture();
 				}
 			}
 		});
 		frame.setVisible(true);
 	}
-	/**
-	 * 1. 화면을 캡쳐해서 이미지 파일로 저장
-	 * 2. 이미지 파일을 텍스트로 추출 (OCR 사용)
-	 */
-	private static void screenCapture () {
+	
+	private static void startPeriodicCapture () {
 		try {
 			// 캡처 영역 계산
 			int x = Math.min(leftTop.x, rightBottom.x);
 			int y = Math.min(leftTop.y, rightBottom.y);
 			int width = Math.abs(leftTop.x - rightBottom.x);
 			int height = Math.abs(leftTop.y - rightBottom.y);
+			captureRect = new Rectangle(x, y, width, height);
 			
-			// Robot 객채를 사용해서 화면 캡쳐
-			Robot robot = new Robot();
-			Rectangle screenRect = new Rectangle(x, y, width, height);
-			BufferedImage screenShot = robot.createScreenCapture(screenRect);
+			// 스케줄러 초기화
+			executor = Executors.newSingleThreadScheduledExecutor();
+			executor.scheduleAtFixedRate(() -> {
+				try {
+					screenCapture();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}, 0, 5, TimeUnit.SECONDS);
 			
-			// 캡처한 이미지를 파일로 저장
-			File outputFile = new File("screenshot.png");
-			ImageIO.write(screenShot, "png", outputFile);
 			
-			// tessrtact 로 ocr 실행
-			Tesseract tesseract = new Tesseract();
-			tesseract.setDatapath("src/LanguageResources");
-			tesseract.setLanguage("kor+eng");
-			
-			// tessrtact 확인
-			File tessdataDir = new File("src/LanguageResources");
-			if (!tessdataDir.exists() || !tessdataDir.isDirectory()) {
-				System.err.println("language Resources 폴더 인식 불가");
-				return;
-			}
-			String result = tesseract.doOCR(outputFile);
-			
-			System.out.println(result);
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+	/**
+	 * 1. 화면을 캡쳐해서 이미지 파일로 저장
+	 * 2. 이미지 파일을 텍스트로 추출 (OCR 사용)
+	 */
+	private static void screenCapture() throws Exception {
+		// Robot 객채를 사용해서 화면 캡쳐
+		Robot robot = new Robot();
+		BufferedImage screenShot = robot.createScreenCapture(captureRect);
+		
+		// 캡처한 이미지를 파일로 저장
+		File outputFile = new File("screenshot.png");
+		ImageIO.write(screenShot, "png", outputFile);
+		
+		// tessrtact 로 ocr 실행
+		Tesseract tesseract = new Tesseract();
+		tesseract.setDatapath("src/LanguageResources");
+		tesseract.setLanguage("kor+eng");
+		
+		// tessrtact 확인
+		File tessdataDir = new File("src/LanguageResources");
+		if (!tessdataDir.exists() || !tessdataDir.isDirectory()) {
+			System.err.println("language Resources 폴더 인식 불가");
+			return;
+		}
+		String result = tesseract.doOCR(outputFile);
+		
+//		saver saverr = new saver();
+		saverr.save(result);
+//		System.out.println(result);
+	}
+	
+	private static class saver {
+		private static String data;
+		public saver () {
+			data = "";
+		}
+		public static boolean compareFirstTenNonSpace(String str1, String str2) {
+			// 공백 제거 후 문자열에서 앞 10글자 추출
+			String filteredStr1 = str1.replaceAll("\\s+", ""); // 모든 공백 제거
+			String filteredStr2 = str2.replaceAll("\\s+", "");
+			
+			// 10글자 미만일 경우 문자열 전체 사용
+			String prefix1 = filteredStr1.length() <= 10 ? filteredStr1 : filteredStr1.substring(0, 10);
+			String prefix2 = filteredStr2.length() <= 10 ? filteredStr2 : filteredStr2.substring(0, 10);
+			
+			// 비교
+			return prefix1.equals(prefix2);
+		}
+		public void save(String data) {
+			if (!compareFirstTenNonSpace(this.data, data)) {
+				System.out.println("이전 메세지 : " + this.data);
+				System.out.println("새로운 메세지 : " + data);
+				this.data = data;
+			} else {
+				System.out.println("데이터가 같음 : " + data);
+			}
 		}
 	}
 }
