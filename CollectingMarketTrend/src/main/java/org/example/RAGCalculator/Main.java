@@ -189,14 +189,14 @@ public class Main {
         String notProcessingData = "";
         String temp = "";
     
-        while (DataScanner.hasNextLine()) {
-            temp = DataScanner.next();
-            notProcessingData += temp + "\n";
-//                System.out.println("scanning data / data = " + temp);
-            if (temp.equals("봇")) {
-                break;
-            }
-        }
+//        while (DataScanner.hasNextLine()) {
+//            temp = DataScanner.next();
+//            notProcessingData += temp + "\n";
+////                System.out.println("scanning data / data = " + temp);
+//            if (temp.equals("봇")) {
+//                break;
+//            }
+//        }
 
 //            while (scanner.hasNextLine()) {
 //                Scanner lineScanner = new Scanner(scanner.nextLine());
@@ -211,9 +211,9 @@ public class Main {
 
 //            System.out.println("데이터 \n" + notProcessingData);
     
-        FileWriter fileWriter = new FileWriter(filePath);
-        fileWriter.write(notProcessingData);
-        fileWriter.close();
+//        FileWriter fileWriter = new FileWriter(filePath);
+//        fileWriter.write(notProcessingData);
+//        fileWriter.close();
 
 //            System.out.println("fileWriter function done");
     

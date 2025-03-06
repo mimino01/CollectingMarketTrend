@@ -9,6 +9,9 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +25,7 @@ public class ScreenCaptureOCR {
 	private static ScheduledExecutorService executor;
 	private static String[] price;
 	private static saver saverr = new saver();
+	static String filePath = "src/data.txt";
 	
 	public static void main (String[] args) {
 		SwingUtilities.invokeLater(ScreenCaptureOCR::createGUI);
@@ -132,11 +136,16 @@ public class ScreenCaptureOCR {
 			// 비교
 			return prefix1.equals(prefix2);
 		}
-		public void save(String data) {
+		public void save(String data) throws IOException {
 			if (!compareFirstTenNonSpace(this.data, data)) {
 				System.out.println("이전 메세지 : " + this.data);
 				System.out.println("새로운 메세지 : " + data);
 				this.data = data;
+				
+				// 파일에 추가(append) 모드로 쓰기
+				try (FileWriter fileWriter = new FileWriter(filePath, true)) { // append 모드 활성화
+					fileWriter.write(data + "\n"); // 새로운 데이터 추가
+				}
 			} else {
 				System.out.println("데이터가 같음 : " + data);
 			}
